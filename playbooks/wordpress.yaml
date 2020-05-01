@@ -1,0 +1,64 @@
+---
+- name: Install WebServer
+  hosts: all
+  become: true
+  become_method: sudo
+  user: centos
+
+  tasks: 
+  - name: install apache
+    package: 
+      name: httpd
+      state: latest
+
+  - name: Install mariadb-server
+    package: 
+      name: mariadb
+      state: latest
+
+  - name: install epel-release
+    shell: "yum install epel-release -y"
+
+  - name: install remi-release
+    shell: "yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm -y"
+
+  - name: Enable php7.2
+    shell: "yum-config-manager --enable remi-php72 -y"
+
+  - name: install php
+    shell: "yum install php php-mysql -y"
+
+  - name: Stop Iptables
+    service:
+      name: iptables
+      state: stopped
+      enabled: false   
+ 
+  - name: Download wordpress
+    get_url: 
+      url: https://wordpress.org/latest.tar.gz
+      dest: /tmp/
+    
+
+  - name: Unzip wordpress
+    unarchive: 
+      src: /tmp/wordpress-5.4.tar.gz
+      dest: /var/www/html/
+      mode: 0600
+      owner: apache
+      group: apache
+      remote_src: yes
+
+  - name: Move index.html 
+    shell: "mv /var/www/html/index.html /tmp/"
+
+  - name: Start webserver
+    service: 
+      name: httpd
+      state: restarted
+      enabled: true
+  - name: SElinux
+    selinux:
+      policy: targeted
+      state: disabled
+
